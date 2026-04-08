@@ -12,15 +12,16 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\OrderServiceController as AdminOrderServiceController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
-use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SupplierController as AdminSupplierController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\User\HomeController;
+use App\Http\Controllers\User\ProductController as UserProductController;
 
 Route::get('/', fn () => view('welcome'))->name('home');
+Route::get('/products', UserProductController::class)->name('products');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -97,13 +98,6 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         // contoh:
         // Route::get('/booking', ...);
         // Route::get('/laporan', ...);
-
-        Route::get('/services', [AdminServiceController::class, 'index'])->name('admin.services.index');
-        Route::get('/services/create', [AdminServiceController::class, 'create'])->name('admin.services.create');
-        Route::post('/services', [AdminServiceController::class, 'store'])->name('admin.services.store');
-        Route::get('/services/{service}/edit', [AdminServiceController::class, 'edit'])->name('admin.services.edit');
-        Route::put('/services/{service}', [AdminServiceController::class, 'update'])->name('admin.services.update');
-        Route::delete('/services/{service}', [AdminServiceController::class, 'destroy'])->name('admin.services.destroy');
 
         Route::get('/discounts', [AdminDiscountController::class, 'index'])->name('admin.discounts.index');
         Route::get('/discounts/create', [AdminDiscountController::class, 'create'])->name('admin.discounts.create');

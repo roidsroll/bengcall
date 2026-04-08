@@ -38,23 +38,6 @@
                 ->values();
         @endphp
 
-        <div class="mt-8 flex flex-wrap gap-3">
-            @forelse ($actionMenus as $menu)
-                @php
-                    $rawUrl = trim((string) $menu->url);
-                    $isExternal = str_starts_with($rawUrl, 'http://') || str_starts_with($rawUrl, 'https://');
-                    $href = $isExternal ? $rawUrl : url($rawUrl);
-                @endphp
-
-                <a
-                    href="{{ $href }}"
-                    class="inline-flex items-center rounded-xl bg-[#CE2626] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b81f1f] focus:outline-none focus:ring-4 focus:ring-[#CE2626]/30"
-                >
-                    {{ $menu->name }}
-                </a>
-            @empty
-                <p class="text-sm text-slate-600">Menu untuk role ini belum di-assign.</p>
-            @endforelse
-        </div>
+        
     </div>
 @endsection

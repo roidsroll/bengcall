@@ -38,6 +38,7 @@
             <table class="min-w-full table-fixed divide-y divide-slate-200">
                 <thead class="bg-slate-50">
                     <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                        <th class="w-[110px] px-5 py-3">Foto</th>
                         <th class="w-[280px] px-5 py-3">Nama</th>
                         <th class="w-[220px] px-5 py-3">Category</th>
                         <th class="w-[220px] px-5 py-3">Brand</th>
@@ -51,6 +52,19 @@
                 <tbody class="divide-y divide-slate-200 bg-white">
                     @forelse ($products as $product)
                         <tr class="text-sm text-slate-700">
+                            <td class="px-5 py-3 align-top">
+                                @if ($product->products_images)
+                                    <img
+                                        src="{{ asset($product->products_images) }}"
+                                        alt="{{ $product->name }}"
+                                        class="h-16 w-16 rounded-xl object-cover ring-1 ring-slate-200"
+                                    >
+                                @else
+                                    <div class="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+                                        No Photo
+                                    </div>
+                                @endif
+                            </td>
                             <td class="px-5 py-3 align-top">
                                 <p class="font-semibold leading-5 text-slate-900">{{ $product->name }}</p>
                                 <p class="mt-1 text-xs text-slate-600">
@@ -90,7 +104,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-5 py-10 text-center text-sm text-slate-600">
+                            <td colspan="9" class="px-5 py-10 text-center text-sm text-slate-600">
                                 Tidak ada data product.
                             </td>
                         </tr>
@@ -104,4 +118,3 @@
         </div>
     </div>
 @endsection
-

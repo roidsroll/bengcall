@@ -9,6 +9,8 @@
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+            <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
 
         @php
             $tailwindBuilt = file_exists(public_path('css/app.css')) && filesize(public_path('css/app.css')) > 0;
@@ -48,6 +50,7 @@
 
                 <nav class="flex items-center gap-2 text-sm font-medium">
                     <a href="{{ route('home') }}" class="rounded-lg px-3 py-2 hover:bg-white/10">Home</a>
+                    <a href="{{ route('products') }}" class="rounded-lg px-3 py-2 hover:bg-white/10">Our Products</a>
 
                     @auth
                         <a href="{{ route('dashboard') }}" class="rounded-lg px-3 py-2 hover:bg-white/10">
@@ -77,11 +80,11 @@
             @yield('content')
         </main>
 
-        <footer class="border-t border-slate-200 bg-white">
+        {{-- <footer class="border-t border-slate-200 bg-white">
             <div class="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-6 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                 <p>© {{ date('Y') }} bengcall</p>
                 <p class="text-slate-500">Bengkel panggilan cepat & terpercaya</p>
             </div>
-        </footer>
+        </footer> --}}
     </body>
 </html>

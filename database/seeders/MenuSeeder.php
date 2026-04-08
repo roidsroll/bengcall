@@ -82,18 +82,6 @@ class MenuSeeder extends Seeder
             ]
         );
 
-        $serviceMenu = Menu::firstOrCreate(
-            [
-                'parent_id' => $masterData->id,
-                'name' => 'Master Services',
-            ],
-            [
-                'url' => '/admin/services',
-                'icon' => 'fa-solid fa-screwdriver-wrench',
-                'order' => 53,
-            ]
-        );
-
         $discountMenu = Menu::firstOrCreate(
             [
                 'parent_id' => $masterData->id,
@@ -126,7 +114,6 @@ class MenuSeeder extends Seeder
                 $categoryMenu->id,
                 $brandMenu->id,
                 $productMenu->id,
-                $serviceMenu->id,
                 $discountMenu->id,
                 $supplierMenu->id,
             ]);

@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\OrderService;
 use App\Models\Product;
 use App\Models\Role;
-use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,25 +53,13 @@ class OrderController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
-        $technicians = User::query()
-            ->whereHas('role', fn ($q) => $q->where('name', 'teknisi'))
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
-
         $products = Product::query()
             ->orderBy('name')
             ->get(['id', 'name', 'sell_price', 'unit']);
 
-        $services = Service::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'base_price']);
-
         return view('admin.orders.create', [
             'customers' => $customers,
-            'technicians' => $technicians,
             'products' => $products,
-            'services' => $services,
         ]);
     }
 
@@ -83,21 +69,19 @@ class OrderController extends Controller
         if (! in_array($customerType, ['customer', 'walk_in'], true)) {
             $customerType = 'customer';
         }
+
         $request->merge([
             'customer_type' => $customerType,
         ]);
 
         $spareparts = $this->normalizeLines($request->input('spareparts', []), 'product_id');
-        $serviceItems = $this->normalizeLines($request->input('services', []), 'service_id');
 
         $request->merge([
             'spareparts' => $spareparts,
-            'services' => $serviceItems,
         ]);
 
         $rules = [
             'customer_type' => ['required', 'in:customer,walk_in'],
-            'technician_id' => ['nullable', 'integer', 'exists:users,id'],
             'vehicle_name' => ['required', 'string', 'max:255'],
             'license_plate' => ['required', 'string', 'max:255'],
             'customer_notes' => ['nullable', 'string', 'max:5000'],
@@ -105,10 +89,6 @@ class OrderController extends Controller
             'spareparts.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'spareparts.*.quantity' => ['required', 'integer', 'min:1'],
             'spareparts.*.price' => ['required', 'numeric', 'min:0'],
-            'services' => ['nullable', 'array'],
-            'services.*.service_id' => ['required', 'integer', 'exists:services,id'],
-            'services.*.quantity' => ['required', 'integer', 'min:1'],
-            'services.*.price' => ['required', 'numeric', 'min:0'],
         ];
 
         if ($customerType === 'customer') {
@@ -121,9 +101,9 @@ class OrderController extends Controller
 
         $validator = Validator::make($request->all(), $rules);
 
-        $validator->after(function ($validator) use ($customerType, $request, $spareparts, $serviceItems) {
-            if (count($spareparts) < 1 && count($serviceItems) < 1) {
-                $validator->errors()->add('items', 'Minimal pilih 1 item di tab Sparepart atau Services.');
+        $validator->after(function ($validator) use ($customerType, $request, $spareparts) {
+            if (count($spareparts) < 1) {
+                $validator->errors()->add('items', 'Minimal pilih 1 sparepart untuk membuat order.');
             }
 
             if ($customerType === 'walk_in') {
@@ -142,7 +122,6 @@ class OrderController extends Controller
 
         $validated = $validator->validate();
         $spareparts = $validated['spareparts'] ?? [];
-        $serviceItems = $validated['services'] ?? [];
 
         $userId = null;
         $customerNotes = $validated['customer_notes'] ?? null;
@@ -159,19 +138,9 @@ class OrderController extends Controller
             $userId = (int) $validated['user_id'];
         }
 
-        $result = DB::transaction(function () use ($customerNotes, $userId, $validated, $spareparts, $serviceItems) {
-            $order = null;
-            $orderService = null;
-
+        $order = DB::transaction(function () use ($customerNotes, $userId, $validated, $spareparts) {
             $productIds = collect($spareparts)
                 ->pluck('product_id')
-                ->filter()
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values();
-
-            $serviceIds = collect($serviceItems)
-                ->pluck('service_id')
                 ->filter()
                 ->map(fn ($id) => (int) $id)
                 ->unique()
@@ -181,128 +150,50 @@ class OrderController extends Controller
                 ->whereIn('id', $productIds->all())
                 ->pluck('name', 'id');
 
-            $serviceNames = Service::query()
-                ->whereIn('id', $serviceIds->all())
-                ->pluck('name', 'id');
+            $order = Order::create([
+                'order_number' => $this->generateOrderNumber(),
+                'user_id' => (int) $userId,
+                'vehicle_name' => $validated['vehicle_name'],
+                'license_plate' => $validated['license_plate'],
+                'customer_notes' => $customerNotes,
+                'total_price' => 0,
+                'status' => 'pending',
+                'payment_status' => 'unpaid',
+            ]);
 
-            if (count($spareparts) > 0) {
-                $orderNumber = $this->generateOrderNumber();
+            $total = 0;
 
-                $order = Order::create([
-                    'order_number' => $orderNumber,
-                    'user_id' => (int) $userId,
-                    'vehicle_name' => $validated['vehicle_name'],
-                    'license_plate' => $validated['license_plate'],
-                    'customer_notes' => $customerNotes,
-                    'total_price' => 0,
-                    'status' => 'pending',
-                    'payment_status' => 'unpaid',
+            foreach ($spareparts as $item) {
+                $quantity = (int) $item['quantity'];
+                $price = (float) $item['price'];
+                $subtotal = $quantity * $price;
+                $productId = (int) $item['product_id'];
+
+                $itemName = (string) ($productNames[$productId] ?? 'Part');
+
+                $order->details()->create([
+                    'product_id' => $productId,
+                    'service_id' => null,
+                    'item_name' => $itemName,
+                    'type' => 'part',
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'subtotal' => $subtotal,
                 ]);
 
-                $total = 0;
-
-                foreach ($spareparts as $item) {
-                    $quantity = (int) $item['quantity'];
-                    $price = (float) $item['price'];
-                    $subtotal = $quantity * $price;
-                    $productId = (int) $item['product_id'];
-
-                    $itemName = (string) ($productNames[$productId] ?? 'Part');
-
-                    $order->details()->create([
-                        'product_id' => $productId,
-                        'service_id' => null,
-                        'item_name' => $itemName,
-                        'type' => 'part',
-                        'quantity' => $quantity,
-                        'price' => $price,
-                        'subtotal' => $subtotal,
-                    ]);
-
-                    $total += $subtotal;
-                }
-
-                $order->update([
-                    'total_price' => $total,
-                ]);
+                $total += $subtotal;
             }
 
-            if (count($serviceItems) > 0) {
-                $orderNumber = $this->generateOrderServiceNumber();
+            $order->update([
+                'total_price' => $total,
+            ]);
 
-                $orderService = OrderService::create([
-                    'order_number' => $orderNumber,
-                    'user_id' => (int) $userId,
-                    'technician_id' => isset($validated['technician_id']) ? (int) $validated['technician_id'] : null,
-                    'vehicle_name' => $validated['vehicle_name'],
-                    'license_plate' => $validated['license_plate'],
-                    'customer_notes' => $customerNotes,
-                    'total_price' => 0,
-                    'status' => 'pending',
-                    'payment_status' => 'unpaid',
-                ]);
-
-                $total = 0;
-
-                foreach ($serviceItems as $item) {
-                    $quantity = (int) $item['quantity'];
-                    $price = (float) $item['price'];
-                    $subtotal = $quantity * $price;
-                    $serviceId = (int) $item['service_id'];
-
-                    $itemName = (string) ($serviceNames[$serviceId] ?? 'Service');
-
-                    $orderService->details()->create([
-                        'product_id' => null,
-                        'service_id' => $serviceId,
-                        'item_name' => $itemName,
-                        'type' => 'service',
-                        'quantity' => $quantity,
-                        'price' => $price,
-                        'subtotal' => $subtotal,
-                    ]);
-
-                    $total += $subtotal;
-                }
-
-                $orderService->update([
-                    'total_price' => $total,
-                ]);
-            }
-
-            return [
-                'order' => $order,
-                'orderService' => $orderService,
-            ];
+            return $order;
         });
 
-        /** @var \App\Models\Order|null $order */
-        $order = $result['order'] ?? null;
-        /** @var \App\Models\OrderService|null $orderService */
-        $orderService = $result['orderService'] ?? null;
-
-        if ($order && ! $orderService) {
-            return redirect()
-                ->route('admin.orders.show', $order)
-                ->with('status', 'Order sparepart berhasil dibuat.');
-        }
-
-        if (! $order && $orderService) {
-            return redirect()
-                ->route('admin.order-services.show', $orderService)
-                ->with('status', 'Order service berhasil dibuat.');
-        }
-
-        $orderNumber = $order?->order_number;
-        $orderServiceNumber = $orderService?->order_number;
-        $status = 'Order berhasil dibuat.';
-        if ($orderNumber && $orderServiceNumber) {
-            $status = "Order sparepart ({$orderNumber}) & service ({$orderServiceNumber}) berhasil dibuat.";
-        }
-
         return redirect()
-            ->route('admin.orders.index')
-            ->with('status', $status);
+            ->route('admin.orders.show', $order)
+            ->with('status', 'Order sparepart berhasil dibuat.');
     }
 
     public function show(Order $order)
@@ -364,27 +255,6 @@ class OrderController extends Controller
         $prefix = "BNC-{$date}-";
 
         $last = Order::query()
-            ->where('order_number', 'like', $prefix.'%')
-            ->lockForUpdate()
-            ->orderByDesc('id')
-            ->value('order_number');
-
-        $next = 1;
-
-        if (is_string($last) && str_starts_with($last, $prefix)) {
-            $suffix = substr($last, strlen($prefix));
-            $next = max(1, (int) $suffix + 1);
-        }
-
-        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
-    }
-
-    private function generateOrderServiceNumber(): string
-    {
-        $date = now()->format('Ymd');
-        $prefix = "BNC-SVC-{$date}-";
-
-        $last = OrderService::query()
             ->where('order_number', 'like', $prefix.'%')
             ->lockForUpdate()
             ->orderByDesc('id')

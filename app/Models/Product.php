@@ -15,6 +15,7 @@ class Product extends Model
         'category_id',
         'brand_id',
         'name',
+        'products_images',
         'part_number',
         'unit',
         'purchase_price',
@@ -44,4 +45,3 @@ class Product extends Model
         return $this->hasMany(StockTransaction::class);
     }
 }
-

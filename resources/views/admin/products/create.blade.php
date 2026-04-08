@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.products.store') }}" class="mt-6 space-y-4">
+        <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
             @csrf
 
             <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -74,6 +74,18 @@
                             required
                             class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
                         />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-sm font-medium text-slate-700" for="products_images">Foto Product (opsional)</label>
+                        <input
+                            id="products_images"
+                            name="products_images"
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#CE2626] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#b81f1f] focus:border-[#CE2626] focus:outline-none focus:ring-4 focus:ring-[#CE2626]/20"
+                        />
+                        <p class="mt-2 text-xs text-slate-500">File disimpan ke folder `public/images`. Jika server mendukung, gambar akan dikonversi ke WebP.</p>
                     </div>
 
                     <div>
@@ -166,4 +178,3 @@
         </form>
     </div>
 @endsection
-

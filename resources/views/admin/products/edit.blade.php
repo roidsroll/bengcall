@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.products.update', $product) }}" class="mt-6 space-y-4">
+        <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data" class="mt-6 space-y-4">
             @csrf
             @method('PUT')
 
@@ -81,6 +81,29 @@
                             required
                             class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
                         />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-sm font-medium text-slate-700" for="products_images">Foto Product (opsional)</label>
+                        <input
+                            id="products_images"
+                            name="products_images"
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                            class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#CE2626] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#b81f1f] focus:border-[#CE2626] focus:outline-none focus:ring-4 focus:ring-[#CE2626]/20"
+                        />
+                        <p class="mt-2 text-xs text-slate-500">Upload file baru jika ingin mengganti foto. Jika server mendukung, gambar akan dikonversi ke WebP.</p>
+
+                        @if ($product->products_images)
+                            <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <p class="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">Foto saat ini</p>
+                                <img
+                                    src="{{ asset($product->products_images) }}"
+                                    alt="{{ $product->name }}"
+                                    class="h-44 w-full rounded-xl object-cover"
+                                >
+                            </div>
+                        @endif
                     </div>
 
                     <div>
@@ -173,4 +196,3 @@
         </form>
     </div>
 @endsection
-

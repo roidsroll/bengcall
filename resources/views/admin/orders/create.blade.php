@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Buat Order</h1>
-                <p class="mt-1 text-sm text-slate-600">Tambah order dengan banyak part & service.</p>
+                <p class="mt-1 text-sm text-slate-600">Tambah order sparepart untuk customer atau walk in.</p>
             </div>
             <a
                 href="{{ route('admin.orders.index') }}"
@@ -37,22 +37,6 @@
                 ];
             }
 
-            $oldServices = old('services');
-            if (! is_array($oldServices) || count($oldServices) < 1) {
-                $oldServices = [
-                    [
-                        'service_id' => null,
-                        'quantity' => 1,
-                        'price' => 0,
-                    ],
-                ];
-            }
-
-            $activeTab = (string) old('active_tab', 'sparepart');
-            if (! in_array($activeTab, ['sparepart', 'services'], true)) {
-                $activeTab = 'sparepart';
-            }
-
             $customerType = (string) old('customer_type', 'customer');
             if (! in_array($customerType, ['walk_in', 'customer'], true)) {
                 $customerType = 'customer';
@@ -61,7 +45,6 @@
 
         <form method="POST" action="{{ route('admin.orders.store') }}" class="mt-6 space-y-4">
             @csrf
-            <input type="hidden" name="active_tab" id="active_tab" value="{{ $activeTab }}" />
             <input type="hidden" name="customer_type" id="customer_type" value="{{ $customerType }}" />
 
             <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -145,22 +128,6 @@
                         </div>
                     </div>
 
-                    <div class="sm:col-span-2">
-                        <label class="text-sm font-medium text-slate-700" for="technician_id">Teknisi (opsional, khusus Service)</label>
-                        <select
-                            id="technician_id"
-                            name="technician_id"
-                            class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                        >
-                            <option value="">- Belum di-assign -</option>
-                            @foreach ($technicians as $technician)
-                                <option value="{{ $technician->id }}" @selected((string) old('technician_id') === (string) $technician->id)>
-                                    {{ $technician->name }} ({{ $technician->email }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
                     <div>
                         <label class="text-sm font-medium text-slate-700" for="vehicle_name">Nama Kendaraan</label>
                         <input
@@ -194,7 +161,7 @@
                             name="customer_notes"
                             rows="3"
                             class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                            placeholder="Tulis keluhan singkat…"
+                            placeholder="Tulis keluhan singkat..."
                         >{{ old('customer_notes') }}</textarea>
                     </div>
                 </div>
@@ -204,195 +171,87 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900">Item Order</h2>
-                        <p class="mt-1 text-sm text-slate-600">Pisahkan input Sparepart dan Services.</p>
+                        <p class="mt-1 text-sm text-slate-600">Order sekarang hanya menerima item sparepart.</p>
                     </div>
-                </div>
-
-                <div class="mt-4 flex flex-wrap gap-2 rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200">
                     <button
                         type="button"
-                        class="tab-btn rounded-lg px-4 py-2 text-sm font-semibold {{ $activeTab === 'sparepart' ? 'bg-white text-slate-900 ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}"
-                        data-tab="sparepart"
+                        id="add-sparepart"
+                        class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
                     >
-                        Sparepart
-                    </button>
-                    <button
-                        type="button"
-                        class="tab-btn rounded-lg px-4 py-2 text-sm font-semibold {{ $activeTab === 'services' ? 'bg-white text-slate-900 ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}"
-                        data-tab="services"
-                    >
-                        Services
+                        + Tambah Sparepart
                     </button>
                 </div>
 
-                <div class="mt-4 {{ $activeTab === 'services' ? 'hidden' : '' }}" id="tab-sparepart">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-slate-900">Daftar Sparepart</p>
-                        <button
-                            type="button"
-                            id="add-sparepart"
-                            class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
-                        >
-                            + Tambah Sparepart
-                        </button>
-                    </div>
-
-                    <div class="mt-3 overflow-x-auto">
-                        <table class="min-w-full table-fixed divide-y divide-slate-200">
-                            <thead class="bg-slate-50">
-                                <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                    <th class="w-[420px] px-4 py-3">Sparepart</th>
-                                    <th class="w-[120px] px-4 py-3">Qty</th>
-                                    <th class="w-[160px] px-4 py-3">Harga</th>
-                                    <th class="w-[180px] px-4 py-3">Subtotal</th>
-                                    <th class="w-[100px] px-4 py-3 text-right">Aksi</th>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full table-fixed divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                <th class="w-[420px] px-4 py-3">Sparepart</th>
+                                <th class="w-[120px] px-4 py-3">Qty</th>
+                                <th class="w-[160px] px-4 py-3">Harga</th>
+                                <th class="w-[180px] px-4 py-3">Subtotal</th>
+                                <th class="w-[100px] px-4 py-3 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 bg-white" id="spareparts-body">
+                            @foreach ($oldSpareparts as $i => $oldItem)
+                                @php
+                                    $oldProductId = $oldItem['product_id'] ?? null;
+                                    $oldQty = $oldItem['quantity'] ?? 1;
+                                    $oldPrice = $oldItem['price'] ?? 0;
+                                @endphp
+                                <tr class="line-row text-sm text-slate-700" data-index="{{ $i }}">
+                                    <td class="px-4 py-3 align-top">
+                                        <select
+                                            name="spareparts[{{ $i }}][product_id]"
+                                            class="line-item mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
+                                        >
+                                            <option value="">- Pilih Product -</option>
+                                            @foreach ($products as $product)
+                                                <option
+                                                    value="{{ $product->id }}"
+                                                    data-price="{{ (float) $product->sell_price }}"
+                                                    @selected((string) $oldProductId === (string) $product->id)
+                                                >
+                                                    {{ $product->name }} ({{ $product->unit }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td class="px-4 py-3 align-top">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            name="spareparts[{{ $i }}][quantity]"
+                                            value="{{ $oldQty }}"
+                                            class="line-qty mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-3 align-top">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            name="spareparts[{{ $i }}][price]"
+                                            value="{{ $oldPrice }}"
+                                            class="line-price mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-3 align-top">
+                                        <p class="line-subtotal mt-2 font-semibold text-slate-900">0</p>
+                                    </td>
+                                    <td class="px-4 py-3 text-right align-top">
+                                        <button
+                                            type="button"
+                                            class="remove-line rounded-lg bg-[#CE2626] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b81f1f]"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 bg-white" id="spareparts-body">
-                                @foreach ($oldSpareparts as $i => $oldItem)
-                                    @php
-                                        $oldProductId = $oldItem['product_id'] ?? null;
-                                        $oldQty = $oldItem['quantity'] ?? 1;
-                                        $oldPrice = $oldItem['price'] ?? 0;
-                                    @endphp
-                                    <tr class="line-row text-sm text-slate-700" data-index="{{ $i }}">
-                                        <td class="px-4 py-3 align-top">
-                                            <select
-                                                name="spareparts[{{ $i }}][product_id]"
-                                                class="line-item mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                                            >
-                                                <option value="">- Pilih Product -</option>
-                                                @foreach ($products as $product)
-                                                    <option
-                                                        value="{{ $product->id }}"
-                                                        data-price="{{ (float) $product->sell_price }}"
-                                                        @selected((string) $oldProductId === (string) $product->id)
-                                                    >
-                                                        {{ $product->name }} ({{ $product->unit }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td class="px-4 py-3 align-top">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                name="spareparts[{{ $i }}][quantity]"
-                                                value="{{ $oldQty }}"
-                                                class="line-qty mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3 align-top">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                name="spareparts[{{ $i }}][price]"
-                                                value="{{ $oldPrice }}"
-                                                class="line-price mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3 align-top">
-                                            <p class="line-subtotal mt-2 font-semibold text-slate-900">0</p>
-                                        </td>
-                                        <td class="px-4 py-3 text-right align-top">
-                                            <button
-                                                type="button"
-                                                class="remove-line rounded-lg bg-[#CE2626] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b81f1f]"
-                                            >
-                                                Hapus
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="mt-4 {{ $activeTab === 'sparepart' ? 'hidden' : '' }}" id="tab-services">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-slate-900">Daftar Services</p>
-                        <button
-                            type="button"
-                            id="add-service"
-                            class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
-                        >
-                            + Tambah Service
-                        </button>
-                    </div>
-
-                    <div class="mt-3 overflow-x-auto">
-                        <table class="min-w-full table-fixed divide-y divide-slate-200">
-                            <thead class="bg-slate-50">
-                                <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                    <th class="w-[420px] px-4 py-3">Service</th>
-                                    <th class="w-[120px] px-4 py-3">Qty</th>
-                                    <th class="w-[160px] px-4 py-3">Harga</th>
-                                    <th class="w-[180px] px-4 py-3">Subtotal</th>
-                                    <th class="w-[100px] px-4 py-3 text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 bg-white" id="services-body">
-                                @foreach ($oldServices as $i => $oldItem)
-                                    @php
-                                        $oldServiceId = $oldItem['service_id'] ?? null;
-                                        $oldQty = $oldItem['quantity'] ?? 1;
-                                        $oldPrice = $oldItem['price'] ?? 0;
-                                    @endphp
-                                    <tr class="line-row text-sm text-slate-700" data-index="{{ $i }}">
-                                        <td class="px-4 py-3 align-top">
-                                            <select
-                                                name="services[{{ $i }}][service_id]"
-                                                class="line-item mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                                            >
-                                                <option value="">- Pilih Service -</option>
-                                                @foreach ($services as $service)
-                                                    <option
-                                                        value="{{ $service->id }}"
-                                                        data-price="{{ (float) $service->base_price }}"
-                                                        @selected((string) $oldServiceId === (string) $service->id)
-                                                    >
-                                                        {{ $service->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td class="px-4 py-3 align-top">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                name="services[{{ $i }}][quantity]"
-                                                value="{{ $oldQty }}"
-                                                class="line-qty mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3 align-top">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                name="services[{{ $i }}][price]"
-                                                value="{{ $oldPrice }}"
-                                                class="line-price mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                                            />
-                                        </td>
-                                        <td class="px-4 py-3 align-top">
-                                            <p class="line-subtotal mt-2 font-semibold text-slate-900">0</p>
-                                        </td>
-                                        <td class="px-4 py-3 text-right align-top">
-                                            <button
-                                                type="button"
-                                                class="remove-line rounded-lg bg-[#CE2626] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b81f1f]"
-                                            >
-                                                Hapus
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
 
                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -400,14 +259,6 @@
                         <p>
                             Total Sparepart:
                             <span class="ml-2 text-lg font-semibold text-slate-900" id="sparepart-total-display">0</span>
-                        </p>
-                        <p class="mt-1">
-                            Total Service:
-                            <span class="ml-2 text-lg font-semibold text-slate-900" id="service-total-display">0</span>
-                        </p>
-                        <p class="mt-1">
-                            Grand Total:
-                            <span class="ml-2 text-lg font-semibold text-slate-900" id="grand-total-display">0</span>
                         </p>
                     </div>
 
@@ -475,74 +326,15 @@
                     </td>
                 </tr>
             </template>
-
-            <template id="service-template">
-                <tr class="line-row text-sm text-slate-700" data-index="__INDEX__">
-                    <td class="px-4 py-3 align-top">
-                        <select
-                            name="services[__INDEX__][service_id]"
-                            class="line-item mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                        >
-                            <option value="">- Pilih Service -</option>
-                            @foreach ($services as $service)
-                                <option value="{{ $service->id }}" data-price="{{ (float) $service->base_price }}">
-                                    {{ $service->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </td>
-                    <td class="px-4 py-3 align-top">
-                        <input
-                            type="number"
-                            min="1"
-                            name="services[__INDEX__][quantity]"
-                            value="1"
-                            class="line-qty mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                        />
-                    </td>
-                    <td class="px-4 py-3 align-top">
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            name="services[__INDEX__][price]"
-                            value="0"
-                            class="line-price mt-0.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                        />
-                    </td>
-                    <td class="px-4 py-3 align-top">
-                        <p class="line-subtotal mt-2 font-semibold text-slate-900">0</p>
-                    </td>
-                    <td class="px-4 py-3 text-right align-top">
-                        <button
-                            type="button"
-                            class="remove-line rounded-lg bg-[#CE2626] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b81f1f]"
-                        >
-                            Hapus
-                        </button>
-                    </td>
-                </tr>
-            </template>
         </form>
     </div>
 
     <script>
         (function () {
-            const activeTabInput = document.getElementById('active_tab');
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            const sparepartTab = document.getElementById('tab-sparepart');
-            const servicesTab = document.getElementById('tab-services');
-
             const sparepartsBody = document.getElementById('spareparts-body');
-            const servicesBody = document.getElementById('services-body');
             const addSparepartButton = document.getElementById('add-sparepart');
-            const addServiceButton = document.getElementById('add-service');
             const sparepartTemplate = document.getElementById('sparepart-template');
-            const serviceTemplate = document.getElementById('service-template');
-
             const sparepartTotalDisplay = document.getElementById('sparepart-total-display');
-            const serviceTotalDisplay = document.getElementById('service-total-display');
-            const grandTotalDisplay = document.getElementById('grand-total-display');
 
             function toNumber(value) {
                 const parsed = Number(value);
@@ -555,25 +347,6 @@
                 } catch (e) {
                     return String(Math.round(value));
                 }
-            }
-
-            function setActiveTab(tab) {
-                const value = tab === 'services' ? 'services' : 'sparepart';
-
-                if (activeTabInput) activeTabInput.value = value;
-
-                sparepartTab?.classList.toggle('hidden', value !== 'sparepart');
-                servicesTab?.classList.toggle('hidden', value !== 'services');
-
-                tabButtons.forEach((btn) => {
-                    const btnTab = btn.getAttribute('data-tab');
-                    const isActive = btnTab === value;
-                    btn.classList.toggle('bg-white', isActive);
-                    btn.classList.toggle('text-slate-900', isActive);
-                    btn.classList.toggle('ring-1', isActive);
-                    btn.classList.toggle('ring-slate-200', isActive);
-                    btn.classList.toggle('text-slate-600', !isActive);
-                });
             }
 
             function applyDefaultPrice(row) {
@@ -597,19 +370,15 @@
                 return subtotal;
             }
 
-            function updateTotalFor(body, display) {
+            function updateAllTotals() {
                 let total = 0;
-                body?.querySelectorAll('.line-row').forEach((row) => {
+                sparepartsBody?.querySelectorAll('.line-row').forEach((row) => {
                     total += updateRowSubtotal(row);
                 });
-                if (display) display.textContent = formatIDR(total);
-                return total;
-            }
 
-            function updateAllTotals() {
-                const sparepartTotal = updateTotalFor(sparepartsBody, sparepartTotalDisplay);
-                const serviceTotal = updateTotalFor(servicesBody, serviceTotalDisplay);
-                if (grandTotalDisplay) grandTotalDisplay.textContent = formatIDR(sparepartTotal + serviceTotal);
+                if (sparepartTotalDisplay) {
+                    sparepartTotalDisplay.textContent = formatIDR(total);
+                }
             }
 
             function nextIndex(body) {
@@ -634,52 +403,40 @@
                 updateAllTotals();
             }
 
-            function setupTable(body, template, addButton) {
-                addButton?.addEventListener('click', () => addRow(body, template));
+            addSparepartButton?.addEventListener('click', () => addRow(sparepartsBody, sparepartTemplate));
 
-                body?.addEventListener('change', (event) => {
-                    const target = event.target;
-                    if (!(target instanceof HTMLElement)) return;
-                    const row = target.closest('.line-row');
-                    if (!row) return;
+            sparepartsBody?.addEventListener('change', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const row = target.closest('.line-row');
+                if (!row) return;
 
-                    if (target.classList.contains('line-item')) {
-                        applyDefaultPrice(row);
-                    }
+                if (target.classList.contains('line-item')) {
+                    applyDefaultPrice(row);
+                }
 
-                    updateAllTotals();
-                });
-
-                body?.addEventListener('input', (event) => {
-                    const target = event.target;
-                    if (!(target instanceof HTMLElement)) return;
-                    if (!target.classList.contains('line-qty') && !target.classList.contains('line-price')) return;
-                    updateAllTotals();
-                });
-
-                body?.addEventListener('click', (event) => {
-                    const target = event.target;
-                    if (!(target instanceof HTMLElement)) return;
-                    if (!target.classList.contains('remove-line')) return;
-                    const row = target.closest('.line-row');
-                    if (row) row.remove();
-                    if ((body?.querySelectorAll('.line-row')?.length ?? 0) < 1) {
-                        addRow(body, template);
-                    }
-                    updateAllTotals();
-                });
-            }
-
-            tabButtons.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    setActiveTab(btn.getAttribute('data-tab') || 'sparepart');
-                });
+                updateAllTotals();
             });
 
-            setupTable(sparepartsBody, sparepartTemplate, addSparepartButton);
-            setupTable(servicesBody, serviceTemplate, addServiceButton);
+            sparepartsBody?.addEventListener('input', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                if (!target.classList.contains('line-qty') && !target.classList.contains('line-price')) return;
+                updateAllTotals();
+            });
 
-            setActiveTab(activeTabInput?.value || 'sparepart');
+            sparepartsBody?.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                if (!target.classList.contains('remove-line')) return;
+                const row = target.closest('.line-row');
+                if (row) row.remove();
+                if ((sparepartsBody?.querySelectorAll('.line-row')?.length ?? 0) < 1) {
+                    addRow(sparepartsBody, sparepartTemplate);
+                }
+                updateAllTotals();
+            });
+
             updateAllTotals();
 
             const customerTypeInput = document.getElementById('customer_type');
