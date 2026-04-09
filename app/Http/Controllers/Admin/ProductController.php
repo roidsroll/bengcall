@@ -11,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -25,7 +24,7 @@ class ProductController extends Controller
                 $query->where(function ($inner) use ($search) {
                     $inner
                         ->where('name', 'like', "%{$search}%")
-                        ->orWhere('part_number', 'like', "%{$search}%");
+                        ->orWhere('code_parts', 'like', "%{$search}%");
                 });
             })
             ->orderByDesc('id')
@@ -40,8 +39,11 @@ class ProductController extends Controller
 
     public function create()
     {
+        $categories = Category::query()->orderBy('name')->get(['id', 'name', 'code']);
+
         return view('admin.products.create', [
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => $categories,
+            'categoryCodeParts' => $this->buildCategoryCodePartsMap($categories),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -53,7 +55,7 @@ class ProductController extends Controller
             'brand_id' => ['required', 'integer', 'exists:brands,id'],
             'name' => ['required', 'string', 'max:255'],
             'products_images' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'part_number' => ['nullable', 'string', 'max:255', 'unique:products,part_number'],
+            'stock' => ['nullable', 'integer', 'min:0'],
             'unit' => ['required', 'string', 'max:50'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'sell_price' => ['nullable', 'numeric', 'min:0'],
@@ -70,7 +72,9 @@ class ProductController extends Controller
             'brand_id' => (int) $validated['brand_id'],
             'name' => $validated['name'],
             'products_images' => $imagePath,
-            'part_number' => $validated['part_number'] ?? null,
+            'stock' => $validated['stock'] ?? 0,
+            'code_parts' => $this->generateCodeParts((int) $validated['category_id']),
+            'part_number' => null,
             'unit' => $validated['unit'],
             'purchase_price' => $validated['purchase_price'] ?? 0,
             'sell_price' => $validated['sell_price'] ?? 0,
@@ -83,9 +87,12 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        $categories = Category::query()->orderBy('name')->get(['id', 'name', 'code']);
+
         return view('admin.products.edit', [
             'product' => $product->load(['category', 'brand']),
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => $categories,
+            'categoryCodeParts' => $this->buildCategoryCodePartsMap($categories, $product),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -97,12 +104,6 @@ class ProductController extends Controller
             'brand_id' => ['required', 'integer', 'exists:brands,id'],
             'name' => ['required', 'string', 'max:255'],
             'products_images' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'part_number' => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('products', 'part_number')->ignore($product->id),
-            ],
             'unit' => ['required', 'string', 'max:50'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'sell_price' => ['nullable', 'numeric', 'min:0'],
@@ -122,7 +123,8 @@ class ProductController extends Controller
             'brand_id' => (int) $validated['brand_id'],
             'name' => $validated['name'],
             'products_images' => $imagePath,
-            'part_number' => $validated['part_number'] ?? null,
+            'code_parts' => $this->generateCodeParts((int) $validated['category_id'], $product),
+            'part_number' => null,
             'unit' => $validated['unit'],
             'purchase_price' => $validated['purchase_price'] ?? 0,
             'sell_price' => $validated['sell_price'] ?? 0,
@@ -224,5 +226,46 @@ class ProductController extends Controller
         if (File::exists($fullPath)) {
             File::delete($fullPath);
         }
+    }
+
+    private function buildCategoryCodePartsMap($categories, ?Product $product = null): array
+    {
+        $map = [];
+
+        foreach ($categories as $category) {
+            $map[(string) $category->id] = $this->generateCodeParts((int) $category->id, $product);
+        }
+
+        return $map;
+    }
+
+    private function generateCodeParts(int $categoryId, ?Product $product = null): string
+    {
+        $category = Category::query()->findOrFail($categoryId);
+        $categoryCode = strtoupper(trim((string) $category->code));
+
+        if ($categoryCode === '') {
+            return '000';
+        }
+
+        if ($product && (int) $product->category_id === $categoryId && filled($product->code_parts)) {
+            return (string) $product->code_parts;
+        }
+
+        $latestCodeParts = Product::query()
+            ->where('category_id', $categoryId)
+            ->when($product, fn ($query) => $query->whereKeyNot($product->id))
+            ->whereNotNull('code_parts')
+            ->pluck('code_parts');
+
+        $maxSequence = 0;
+
+        foreach ($latestCodeParts as $codeParts) {
+            if (preg_match('/^' . preg_quote($categoryCode, '/') . '-(\d+)$/', (string) $codeParts, $matches) === 1) {
+                $maxSequence = max($maxSequence, (int) $matches[1]);
+            }
+        }
+
+        return $categoryCode . '-' . str_pad((string) ($maxSequence + 1), 3, '0', STR_PAD_LEFT);
     }
 }

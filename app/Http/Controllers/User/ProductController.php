@@ -18,7 +18,7 @@ class ProductController extends Controller
                 $query->where(function ($inner) use ($search) {
                     $inner
                         ->where('name', 'like', "%{$search}%")
-                        ->orWhere('part_number', 'like', "%{$search}%")
+                        ->orWhere('code_parts', 'like', "%{$search}%")
                         ->orWhereHas('brand', function ($brandQuery) use ($search) {
                             $brandQuery->where('name', 'like', "%{$search}%");
                         })

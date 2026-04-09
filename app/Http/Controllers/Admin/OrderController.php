@@ -208,6 +208,33 @@ class OrderController extends Controller
         ]);
     }
 
+    public function confirm(Order $order): RedirectResponse
+    {
+        if ($order->status !== 'pending' || $order->payment_status !== 'unpaid') {
+            return back()->with('status', 'Order ini tidak bisa dikonfirmasi.');
+        }
+
+        $order->update([
+            'status' => 'completed',
+            'payment_status' => 'paid',
+        ]);
+
+        return back()->with('status', "Order {$order->order_number} berhasil dikonfirmasi.");
+    }
+
+    public function cancel(Order $order): RedirectResponse
+    {
+        if ($order->status !== 'pending') {
+            return back()->with('status', 'Order ini tidak bisa dibatalkan.');
+        }
+
+        $order->update([
+            'status' => 'cancelled',
+        ]);
+
+        return back()->with('status', "Order {$order->order_number} berhasil dibatalkan.");
+    }
+
     private function ensureWalkInUser(): User
     {
         $roleId = (int) Role::query()

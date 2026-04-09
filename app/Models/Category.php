@@ -11,6 +11,7 @@ class Category extends Model
     use HasFactory;
 
     protected $fillable = [
+        'code',
         'name',
         'slug',
     ];
@@ -20,4 +21,3 @@ class Category extends Model
         return $this->hasMany(Product::class);
     }
 }
-

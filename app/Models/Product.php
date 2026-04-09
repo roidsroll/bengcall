@@ -16,6 +16,8 @@ class Product extends Model
         'brand_id',
         'name',
         'products_images',
+        'stock',
+        'code_parts',
         'part_number',
         'unit',
         'purchase_price',
@@ -25,6 +27,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'stock' => 'integer',
         'purchase_price' => 'decimal:2',
         'sell_price' => 'decimal:2',
         'min_stock' => 'integer',

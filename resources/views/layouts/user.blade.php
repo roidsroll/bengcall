@@ -86,5 +86,6 @@
                 <p class="text-slate-500">Bengkel panggilan cepat & terpercaya</p>
             </div>
         </footer> --}}
+        @stack('scripts')
     </body>
 </html>

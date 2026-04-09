@@ -30,6 +30,20 @@
 
             <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <div>
+                    <label class="text-sm font-medium text-slate-700" for="code">Code</label>
+                    <input
+                        id="code"
+                        name="code"
+                        type="text"
+                        value="{{ old('code') }}"
+                        required
+                        autocomplete="off"
+                        class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 uppercase text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
+                    />
+                    <p class="mt-1 text-xs text-slate-500">Otomatis uppercase saat diketik.</p>
+                </div>
+
+                <div>
                     <label class="text-sm font-medium text-slate-700" for="name">Nama</label>
                     <input
                         id="name"
@@ -61,3 +75,18 @@
     </div>
 @endsection
 
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const codeInput = document.getElementById('code');
+
+            if (!codeInput) {
+                return;
+            }
+
+            codeInput.addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+            });
+        });
+    </script>
+@endpush

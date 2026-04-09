@@ -25,12 +25,36 @@
                 <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Detail Order</h1>
                 <p class="mt-1 text-sm text-slate-600">{{ $order->order_number }}</p>
             </div>
-            <a
-                href="{{ route('admin.orders.index') }}"
-                class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
-            >
-                Kembali
-            </a>
+            <div class="flex items-center gap-3">
+                @if ($order->status === 'pending' && $order->payment_status === 'unpaid')
+                    <form method="POST" action="{{ route('admin.orders.cancel', $order) }}">
+                        @csrf
+                        <button
+                            type="submit"
+                            class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        >
+                            Cancel
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ route('admin.orders.confirm', $order) }}">
+                        @csrf
+                        <button
+                            type="submit"
+                            class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                        >
+                            Konfirmasi
+                        </button>
+                    </form>
+                @endif
+
+                <a
+                    href="{{ route('admin.orders.index') }}"
+                    class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
+                >
+                    Kembali
+                </a>
+            </div>
         </div>
 
         <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -19,7 +20,8 @@ class CategoryController extends Controller
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner
-                        ->where('name', 'like', "%{$search}%")
+                        ->where('code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
                         ->orWhere('slug', 'like', "%{$search}%");
                 });
             })
@@ -41,12 +43,14 @@ class CategoryController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'code' => ['required', 'string', 'max:255', 'unique:categories,code'],
             'name' => ['required', 'string', 'max:255'],
         ]);
 
         $slug = $this->generateUniqueSlug($validated['name']);
 
         Category::create([
+            'code' => strtoupper(trim($validated['code'])),
             'name' => $validated['name'],
             'slug' => $slug,
         ]);
@@ -64,15 +68,28 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category): RedirectResponse
     {
         $validated = $request->validate([
+            'code' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('categories', 'code')->ignore($category->id),
+            ],
             'name' => ['required', 'string', 'max:255'],
         ]);
 
         $slug = $this->generateUniqueSlug($validated['name'], $category->id);
+        $categoryCode = strtoupper(trim($validated['code']));
+        $codeChanged = $category->code !== $categoryCode;
 
         $category->update([
+            'code' => $categoryCode,
             'name' => $validated['name'],
             'slug' => $slug,
         ]);
+
+        if ($codeChanged) {
+            $this->syncProductCodeParts($category);
+        }
 
         return redirect()->route('admin.categories.index')->with('status', 'Category berhasil diupdate.');
     }
@@ -109,5 +126,24 @@ class CategoryController extends Controller
         }
 
         return $slug;
+    }
+
+    private function syncProductCodeParts(Category $category): void
+    {
+        $categoryCode = strtoupper(trim((string) $category->code));
+
+        if ($categoryCode === '') {
+            return;
+        }
+
+        $counter = 1;
+
+        foreach ($category->products()->orderBy('id')->get() as $product) {
+            $product->update([
+                'code_parts' => $categoryCode . '-' . str_pad((string) $counter, 3, '0', STR_PAD_LEFT),
+            ]);
+
+            $counter++;
+        }
     }
 }

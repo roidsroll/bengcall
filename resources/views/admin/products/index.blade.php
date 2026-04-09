@@ -14,7 +14,7 @@
                     name="q"
                     value="{{ $search ?? '' }}"
                     class="w-64 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                    placeholder="Cari nama / part number…"
+                    placeholder="Cari nama / code parts..."
                 />
                 <button
                     type="submit"
@@ -40,11 +40,12 @@
                     <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
                         <th class="w-[110px] px-5 py-3">Foto</th>
                         <th class="w-[280px] px-5 py-3">Nama</th>
-                        <th class="w-[220px] px-5 py-3">Category</th>
+                        <th class="w-[100px] px-5 py-3">Category</th>
                         <th class="w-[220px] px-5 py-3">Brand</th>
                         <th class="w-[120px] px-5 py-3">Unit</th>
                         <th class="w-[160px] px-5 py-3">Harga Beli</th>
                         <th class="w-[160px] px-5 py-3">Harga Jual</th>
+                        <th class="w-[120px] px-5 py-3">Stock</th>
                         <th class="w-[120px] px-5 py-3">Min Stock</th>
                         <th class="w-[220px] px-5 py-3 text-right">Aksi</th>
                     </tr>
@@ -67,8 +68,8 @@
                             </td>
                             <td class="px-5 py-3 align-top">
                                 <p class="font-semibold leading-5 text-slate-900">{{ $product->name }}</p>
-                                <p class="mt-1 text-xs text-slate-600">
-                                    Part #: {{ $product->part_number ?: '-' }}
+                                <p class="mt-1 text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                                    Code Parts: {{ $product->code_parts ?: '-' }}
                                 </p>
                             </td>
                             <td class="px-5 py-3 align-top">{{ $product->category?->name ?? '-' }}</td>
@@ -76,6 +77,7 @@
                             <td class="px-5 py-3 align-top">{{ $product->unit }}</td>
                             <td class="px-5 py-3 align-top">{{ number_format((float) $product->purchase_price, 0, ',', '.') }}</td>
                             <td class="px-5 py-3 align-top">{{ number_format((float) $product->sell_price, 0, ',', '.') }}</td>
+                            <td class="px-5 py-3 align-top">{{ $product->stock }}</td>
                             <td class="px-5 py-3 align-top">{{ $product->min_stock }}</td>
                             <td class="px-5 py-3 text-right align-top">
                                 <div class="flex items-center justify-end gap-2 whitespace-nowrap">

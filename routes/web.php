@@ -19,9 +19,13 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\User\HomeController;
 use App\Http\Controllers\User\ProductController as UserProductController;
+use App\Http\Controllers\User\ProductOrderController as UserProductOrderController;
 
 Route::get('/', fn () => view('welcome'))->name('home');
 Route::get('/products', UserProductController::class)->name('products');
+Route::post('/products/{product}/order', UserProductOrderController::class)
+    ->middleware('auth')
+    ->name('products.order');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -116,6 +120,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
         Route::get('/orders/create', [AdminOrderController::class, 'create'])->name('admin.orders.create');
         Route::post('/orders', [AdminOrderController::class, 'store'])->name('admin.orders.store');
+        Route::post('/orders/{order}/confirm', [AdminOrderController::class, 'confirm'])->name('admin.orders.confirm');
+        Route::post('/orders/{order}/cancel', [AdminOrderController::class, 'cancel'])->name('admin.orders.cancel');
         Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
 
         Route::get('/order-services', [AdminOrderServiceController::class, 'index'])->name('admin.order-services.index');

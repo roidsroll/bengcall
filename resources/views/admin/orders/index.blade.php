@@ -25,13 +25,6 @@
             </form>
 
             <a
-                href="{{ route('admin.order-services.index') }}"
-                class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
-            >
-                Order Services
-            </a>
-
-            <a
                 href="{{ route('admin.orders.create') }}"
                 class="inline-flex items-center rounded-xl bg-[#CE2626] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b81f1f] focus:outline-none focus:ring-4 focus:ring-[#CE2626]/30"
             >
@@ -97,12 +90,36 @@
                                 </span>
                             </td>
                             <td class="px-5 py-3 text-right align-top">
-                                <a
-                                    href="{{ route('admin.orders.show', $order) }}"
-                                    class="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
-                                >
-                                    Detail
-                                </a>
+                                <div class="flex items-center justify-end gap-2">
+                                    @if ($order->status === 'pending' && $order->payment_status === 'unpaid')
+                                        <form method="POST" action="{{ route('admin.orders.cancel', $order) }}">
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </form>
+
+                                        <form method="POST" action="{{ route('admin.orders.confirm', $order) }}">
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                                            >
+                                                Konfirmasi
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    <a
+                                        href="{{ route('admin.orders.show', $order) }}"
+                                        class="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50"
+                                    >
+                                        Detail
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @empty

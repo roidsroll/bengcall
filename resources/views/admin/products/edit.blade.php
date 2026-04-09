@@ -32,6 +32,19 @@
             <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
+                        <label class="text-sm font-medium text-slate-700" for="code_parts_display">Code Parts</label>
+                        <input
+                            id="code_parts_display"
+                            type="text"
+                            value="{{ old('code_parts', $product->code_parts) }}"
+                            disabled
+                            class="mt-1 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-slate-900 shadow-sm outline-none"
+                        />
+                        <input id="code_parts" name="code_parts" type="hidden" value="{{ old('code_parts', $product->code_parts) }}">
+                        <p class="mt-1 text-xs text-slate-500">Format otomatis: `CODECATEGORY-001`.</p>
+                    </div>
+
+                    <div>
                         <label class="text-sm font-medium text-slate-700" for="category_id">Category</label>
                         <select
                             id="category_id"
@@ -43,6 +56,7 @@
                             @foreach ($categories as $category)
                                 <option
                                     value="{{ $category->id }}"
+                                    data-code="{{ $category->code }}"
                                     @selected((string) old('category_id', (string) $product->category_id) === (string) $category->id)
                                 >
                                     {{ $category->name }}
@@ -94,27 +108,21 @@
                         />
                         <p class="mt-2 text-xs text-slate-500">Upload file baru jika ingin mengganti foto. Jika server mendukung, gambar akan dikonversi ke WebP.</p>
 
-                        @if ($product->products_images)
-                            <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                <p class="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">Foto saat ini</p>
+                     @if ($product->products_images)
+                        <div class="mt-4">
+                            <p class="text-sm font-medium text-slate-700">Foto saat ini</p>
+
+                            <div class="flex h-24 w-28 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
                                 <img
                                     src="{{ asset($product->products_images) }}"
                                     alt="{{ $product->name }}"
-                                    class="h-44 w-full rounded-xl object-cover"
+                                    class="max-h-full max-w-full rounded-md object-contain"
+                                    width="100"
+                                    height="100"
                                 >
                             </div>
-                        @endif
-                    </div>
-
-                    <div>
-                        <label class="text-sm font-medium text-slate-700" for="part_number">Part Number (opsional)</label>
-                        <input
-                            id="part_number"
-                            name="part_number"
-                            type="text"
-                            value="{{ old('part_number', $product->part_number) }}"
-                            class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-[#CE2626] focus:ring-4 focus:ring-[#CE2626]/20"
-                        />
+                        </div>
+                    @endif
                     </div>
 
                     <div>
@@ -196,3 +204,25 @@
         </form>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const categorySelect = document.getElementById('category_id');
+            const codePartsInput = document.getElementById('code_parts');
+            const codePartsDisplay = document.getElementById('code_parts_display');
+            const categoryCodeParts = @json($categoryCodeParts);
+
+            const syncCodeParts = function () {
+                const categoryId = categorySelect.value;
+                const value = categoryCodeParts[categoryId] ?? '';
+
+                codePartsInput.value = value;
+                codePartsDisplay.value = value;
+            };
+
+            syncCodeParts();
+            categorySelect.addEventListener('change', syncCodeParts);
+        });
+    </script>
+@endpush
